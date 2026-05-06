@@ -1,5 +1,5 @@
 /*
- * awg_wgobfs_main.c - AmneziaWG obfuscation/de-obfuscation iptables target
+ * xt_AWGOBFS_main.c - AmneziaWG obfuscation/de-obfuscation iptables target
  *
  * This kernel module implements an iptables target that transforms standard
  * WireGuard UDP packets into AmneziaWG-obfuscated form (and vice versa).
@@ -39,14 +39,14 @@
 #include <net/ipv6.h>
 #endif
 
-#include "awg_wgobfs.h"
+#include "xt_AWGOBFS.h"
 #include "wg.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Li Guangming");
 MODULE_DESCRIPTION("AmneziaWG Obfuscation Target for iptables");
 MODULE_VERSION("0.1");
-MODULE_ALIAS("xt_AWG_WGOBFS");
+MODULE_ALIAS("xt_AWGOBFS");
 
 /* -------------------------------------------------------------------------- */
 /* Helper: header range matching                                              */
@@ -137,7 +137,7 @@ static void recalc_checksums_v6(struct sk_buff *skb, int delta)
  *  - The magic header at offset S_n must fall within the H_n range.
  */
 static u32 determine_type(const u8 *payload, unsigned int payload_len,
-			   const struct xt_awg_wgobfs_info *info,
+			   const struct xt_awgobfs_info *info,
 			   int *out_padding)
 {
 	u32 type;
@@ -186,7 +186,7 @@ static u32 determine_type(const u8 *payload, unsigned int payload_len,
 }
 
 static unsigned int do_unobfs(struct sk_buff *skb,
-			      const struct xt_awg_wgobfs_info *info,
+			      const struct xt_awgobfs_info *info,
 			      unsigned short family)
 {
 	struct udphdr *uh;
@@ -239,7 +239,7 @@ static unsigned int do_unobfs(struct sk_buff *skb,
 /* -------------------------------------------------------------------------- */
 
 static unsigned int do_obfs(struct sk_buff *skb,
-			    const struct xt_awg_wgobfs_info *info,
+			    const struct xt_awgobfs_info *info,
 			    unsigned short family)
 {
 	struct udphdr *uh;
@@ -327,9 +327,9 @@ static unsigned int do_obfs(struct sk_buff *skb,
 /* -------------------------------------------------------------------------- */
 
 static unsigned int
-awg_wgobfs_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+xt_awgobfs_tg4(struct sk_buff *skb, const struct xt_action_param *par)
 {
-	const struct xt_awg_wgobfs_info *info = par->targinfo;
+	const struct xt_awgobfs_info *info = par->targinfo;
 	struct iphdr *iph = ip_hdr(skb);
 
 	if (iph->protocol != IPPROTO_UDP)
@@ -343,9 +343,9 @@ awg_wgobfs_tg4(struct sk_buff *skb, const struct xt_action_param *par)
 
 #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 static unsigned int
-awg_wgobfs_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+xt_awgobfs_tg6(struct sk_buff *skb, const struct xt_action_param *par)
 {
-	const struct xt_awg_wgobfs_info *info = par->targinfo;
+	const struct xt_awgobfs_info *info = par->targinfo;
 	struct ipv6hdr *ip6h = ipv6_hdr(skb);
 
 	if (ip6h->nexthdr != IPPROTO_UDP)
@@ -362,10 +362,10 @@ awg_wgobfs_tg6(struct sk_buff *skb, const struct xt_action_param *par)
 /* checkentry: restrict to mangle table                                       */
 /* -------------------------------------------------------------------------- */
 
-static int awg_wgobfs_checkentry(const struct xt_tgchk_param *par)
+static int xt_awgobfs_checkentry(const struct xt_tgchk_param *par)
 {
 	if (strcmp(par->table, "mangle")) {
-		pr_warn("AWG_WGOBFS: can only be called from mangle table\n");
+		pr_warn("AWGOBFS: can only be called from mangle table\n");
 		return -EINVAL;
 	}
 	return 0;
@@ -375,40 +375,40 @@ static int awg_wgobfs_checkentry(const struct xt_tgchk_param *par)
 /* Module registration                                                        */
 /* -------------------------------------------------------------------------- */
 
-static struct xt_target awg_wgobfs_reg[] __read_mostly = {
+static struct xt_target xt_awgobfs_reg[] __read_mostly = {
 	{
-		.name		= "AWG_WGOBFS",
+		.name		= "AWGOBFS",
 		.revision	= 0,
 		.family		= NFPROTO_IPV4,
 		.table		= "mangle",
-		.target		= awg_wgobfs_tg4,
-		.targetsize	= sizeof(struct xt_awg_wgobfs_info),
-		.checkentry	= awg_wgobfs_checkentry,
+		.target		= xt_awgobfs_tg4,
+		.targetsize	= sizeof(struct xt_awgobfs_info),
+		.checkentry	= xt_awgobfs_checkentry,
 		.me		= THIS_MODULE,
 	},
 #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 	{
-		.name		= "AWG_WGOBFS",
+		.name		= "AWGOBFS",
 		.revision	= 0,
 		.family		= NFPROTO_IPV6,
 		.table		= "mangle",
-		.target		= awg_wgobfs_tg6,
-		.targetsize	= sizeof(struct xt_awg_wgobfs_info),
-		.checkentry	= awg_wgobfs_checkentry,
+		.target		= xt_awgobfs_tg6,
+		.targetsize	= sizeof(struct xt_awgobfs_info),
+		.checkentry	= xt_awgobfs_checkentry,
 		.me		= THIS_MODULE,
 	},
 #endif
 };
 
-static int __init awg_wgobfs_init(void)
+static int __init xt_awgobfs_init(void)
 {
-	return xt_register_targets(awg_wgobfs_reg, ARRAY_SIZE(awg_wgobfs_reg));
+	return xt_register_targets(xt_awgobfs_reg, ARRAY_SIZE(xt_awgobfs_reg));
 }
 
-static void __exit awg_wgobfs_exit(void)
+static void __exit xt_awgobfs_exit(void)
 {
-	xt_unregister_targets(awg_wgobfs_reg, ARRAY_SIZE(awg_wgobfs_reg));
+	xt_unregister_targets(xt_awgobfs_reg, ARRAY_SIZE(xt_awgobfs_reg));
 }
 
-module_init(awg_wgobfs_init);
-module_exit(awg_wgobfs_exit);
+module_init(xt_awgobfs_init);
+module_exit(xt_awgobfs_exit);

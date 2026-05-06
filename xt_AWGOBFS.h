@@ -1,11 +1,11 @@
 /*
- * awg_wgobfs.h - Shared header for AmneziaWG iptables obfuscation extension
+ * xt_AWGOBFS.h - Shared header for AmneziaWG iptables obfuscation extension
  *
  * This header is shared between the kernel module and the userspace iptables
  * library. It must be kept in sync on both sides.
  */
-#ifndef _AWG_WGOBFS_H
-#define _AWG_WGOBFS_H
+#ifndef _XT_AWGOBFS_H
+#define _XT_AWGOBFS_H
 
 /*
  * Use <stdint.h> in userspace, <linux/types.h> in kernel. The header is
@@ -32,13 +32,13 @@ struct awg_header {
 };
 
 /*
- * xt_awg_wgobfs_info is the configuration blob passed from userspace to the
+ * xt_awgobfs_info is the configuration blob passed from userspace to the
  * kernel module via setsockopt.
  *
  * Padding must be explicit to avoid ABI mismatches between userspace and
  * kernel (different compilers / alignment).
  */
-struct xt_awg_wgobfs_info {
+struct xt_awgobfs_info {
     uint8_t mode;           /* XT_MODE_OBFS or XT_MODE_UNOBFS */
     uint8_t _pad[3];        /* explicit padding for alignment */
     struct awg_header h1;   /* Handshake Initiation header */
@@ -51,4 +51,4 @@ struct xt_awg_wgobfs_info {
     uint16_t s4;            /* Transport Data padding length */
 };
 
-#endif /* _AWG_WGOBFS_H */
+#endif /* _XT_AWGOBFS_H */

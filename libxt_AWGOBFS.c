@@ -1,9 +1,9 @@
 /*
- * libxt_AWG_WGOBFS.c - Userspace iptables extension for AmneziaWG obfuscation
+ * libxt_AWGOBFS.c - Userspace iptables extension for AmneziaWG obfuscation
  *
  * Usage:
  *   iptables -t mangle -A PREROUTING -p udp --dport 51820 \
- *     -j AWG_WGOBFS --unobfs --h1 12345678 --h2 87654321 \
+ *     -j AWGOBFS --unobfs --h1 12345678 --h2 87654321 \
  *     --h3 11111111 --h4 22222222 --s1 24 --s2 16 --s3 0 --s4 8
  */
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #include <getopt.h>
 #include <xtables.h>
 #include <stdint.h>
-#include "awg_wgobfs.h"
+#include "xt_AWGOBFS.h"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -38,7 +38,7 @@ enum {
 	OPT_UNOBFS,
 };
 
-static const struct option awg_wgobfs_opts[] = {
+static const struct option awgobfs_opts[] = {
 	{.name = "h1",     .has_arg = true,  .val = OPT_H1},
 	{.name = "h2",     .has_arg = true,  .val = OPT_H2},
 	{.name = "h3",     .has_arg = true,  .val = OPT_H3},
@@ -52,10 +52,10 @@ static const struct option awg_wgobfs_opts[] = {
 	{NULL},
 };
 
-static void awg_wgobfs_help(void)
+static void awgobfs_help(void)
 {
 	printf(
-	"AWG_WGOBFS target options:\n"
+	"AWGOBFS target options:\n"
 	"  --obfs / --unobfs                        obfuscation direction\n"
 	"  --h1 <uint32>[-<uint32>]                 magic header for Initiation\n"
 	"  --h2 <uint32>[-<uint32>]                 magic header for Response\n"
@@ -80,7 +80,7 @@ static void parse_header(const char *s, struct awg_header *h)
 
 	if (h->end < h->start)
 		xtables_error(PARAMETER_PROBLEM,
-			      "AWG_WGOBFS: header range end < start");
+			      "AWGOBFS: header range end < start");
 }
 
 static void print_header(const char *name, const struct awg_header *h)
@@ -91,11 +91,11 @@ static void print_header(const char *name, const struct awg_header *h)
 		printf(" --%s %u-%u", name, h->start, h->end);
 }
 
-static int awg_wgobfs_parse(int c, char **argv, int invert,
-			     unsigned int *flags, const void *entry,
-			     struct xt_entry_target **target)
+static int awgobfs_parse(int c, char **argv, int invert,
+			  unsigned int *flags, const void *entry,
+			  struct xt_entry_target **target)
 {
-	struct xt_awg_wgobfs_info *info = (void *)(*target)->data;
+	struct xt_awgobfs_info *info = (void *)(*target)->data;
 
 	switch (c) {
 	case OPT_H1:
@@ -140,20 +140,20 @@ static int awg_wgobfs_parse(int c, char **argv, int invert,
 	return 1;
 }
 
-static void awg_wgobfs_check(unsigned int flags)
+static void awgobfs_check(unsigned int flags)
 {
 	if (!(flags & FLAGS_MODE))
 		xtables_error(PARAMETER_PROBLEM,
-			      "AWG_WGOBFS: --obfs or --unobfs is required.");
+			      "AWGOBFS: --obfs or --unobfs is required.");
 }
 
-static void awg_wgobfs_print(const void *entry,
-			      const struct xt_entry_target *target,
-			      int numeric)
+static void awgobfs_print(const void *entry,
+			    const struct xt_entry_target *target,
+			    int numeric)
 {
-	const struct xt_awg_wgobfs_info *info = (const void *)target->data;
+	const struct xt_awgobfs_info *info = (const void *)target->data;
 
-	printf(" AWG_WGOBFS %s",
+	printf(" AWGOBFS %s",
 	       info->mode == XT_MODE_OBFS ? "obfs" : "unobfs");
 	print_header("h1", &info->h1);
 	print_header("h2", &info->h2);
@@ -163,10 +163,10 @@ static void awg_wgobfs_print(const void *entry,
 	       info->s1, info->s2, info->s3, info->s4);
 }
 
-static void awg_wgobfs_save(const void *entry,
-			     const struct xt_entry_target *target)
+static void awgobfs_save(const void *entry,
+			   const struct xt_entry_target *target)
 {
-	const struct xt_awg_wgobfs_info *info = (const void *)target->data;
+	const struct xt_awgobfs_info *info = (const void *)target->data;
 
 	printf(" --%s", info->mode == XT_MODE_OBFS ? "obfs" : "unobfs");
 	print_header("h1", &info->h1);
@@ -177,38 +177,38 @@ static void awg_wgobfs_save(const void *entry,
 	       info->s1, info->s2, info->s3, info->s4);
 }
 
-static struct xtables_target awg_wgobfs_reg[] = {
+static struct xtables_target awgobfs_reg[] = {
 	{
 		.version       = XTABLES_VERSION,
-		.name          = "AWG_WGOBFS",
+		.name          = "AWGOBFS",
 		.revision      = 0,
 		.family        = NFPROTO_IPV4,
-		.size          = XT_ALIGN(sizeof(struct xt_awg_wgobfs_info)),
-		.userspacesize = XT_ALIGN(sizeof(struct xt_awg_wgobfs_info)),
-		.help          = awg_wgobfs_help,
-		.parse         = awg_wgobfs_parse,
-		.final_check   = awg_wgobfs_check,
-		.print         = awg_wgobfs_print,
-		.save          = awg_wgobfs_save,
-		.extra_opts    = awg_wgobfs_opts,
+		.size          = XT_ALIGN(sizeof(struct xt_awgobfs_info)),
+		.userspacesize = XT_ALIGN(sizeof(struct xt_awgobfs_info)),
+		.help          = awgobfs_help,
+		.parse         = awgobfs_parse,
+		.final_check   = awgobfs_check,
+		.print         = awgobfs_print,
+		.save          = awgobfs_save,
+		.extra_opts    = awgobfs_opts,
 	},
 	{
 		.version       = XTABLES_VERSION,
-		.name          = "AWG_WGOBFS",
+		.name          = "AWGOBFS",
 		.revision      = 0,
 		.family        = NFPROTO_IPV6,
-		.size          = XT_ALIGN(sizeof(struct xt_awg_wgobfs_info)),
-		.userspacesize = XT_ALIGN(sizeof(struct xt_awg_wgobfs_info)),
-		.help          = awg_wgobfs_help,
-		.parse         = awg_wgobfs_parse,
-		.final_check   = awg_wgobfs_check,
-		.print         = awg_wgobfs_print,
-		.save          = awg_wgobfs_save,
-		.extra_opts    = awg_wgobfs_opts,
+		.size          = XT_ALIGN(sizeof(struct xt_awgobfs_info)),
+		.userspacesize = XT_ALIGN(sizeof(struct xt_awgobfs_info)),
+		.help          = awgobfs_help,
+		.parse         = awgobfs_parse,
+		.final_check   = awgobfs_check,
+		.print         = awgobfs_print,
+		.save          = awgobfs_save,
+		.extra_opts    = awgobfs_opts,
 	},
 };
 
-static __attribute__((constructor)) void awg_wgobfs_ldr(void)
+static __attribute__((constructor)) void awgobfs_ldr(void)
 {
-	xtables_register_targets(awg_wgobfs_reg, ARRAY_SIZE(awg_wgobfs_reg));
+	xtables_register_targets(awgobfs_reg, ARRAY_SIZE(awgobfs_reg));
 }
