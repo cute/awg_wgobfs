@@ -33,6 +33,12 @@
 #include <net/udp.h>
 #include <linux/random.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
+#include <linux/unaligned.h>
+#else
+#include <asm/unaligned.h>
+#endif
+
 #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
 #include <linux/ipv6.h>
 #include <linux/netfilter_ipv6/ip6_tables.h>
